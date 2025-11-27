@@ -6,6 +6,7 @@ import '../domain/mesh_model.dart';
 import '../state/scene_providers.dart';
 import '../state/camera_providers.dart';
 import 'cad_viewport_widget.dart';
+import 'viewport_renderer.dart';
 
 /// Main 3D viewer screen with toolbar and viewport.
 class ViewerScreen extends ConsumerWidget {
@@ -21,6 +22,7 @@ class ViewerScreen extends ConsumerWidget {
           onPressed: () => context.goNamed('projects'),
         ),
         actions: [
+          _RenderModeButton(),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Reset Camera',
@@ -186,6 +188,45 @@ class _ToolbarButton extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _RenderModeButton extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final renderMode = ref.watch(renderModeProvider);
+
+    IconData icon;
+    String tooltip;
+
+    switch (renderMode) {
+      case RenderMode.wireframe:
+        icon = Icons.grid_3x3;
+        tooltip = 'Wireframe';
+        break;
+      case RenderMode.solid:
+        icon = Icons.square;
+        tooltip = 'Solid';
+        break;
+      case RenderMode.solidWithEdges:
+        icon = Icons.border_all;
+        tooltip = 'Solid with Edges';
+        break;
+    }
+
+    return IconButton(
+      icon: Icon(icon),
+      tooltip: tooltip,
+      onPressed: () {
+        // Cycle through render modes
+        final nextMode = switch (renderMode) {
+          RenderMode.wireframe => RenderMode.solid,
+          RenderMode.solid => RenderMode.solidWithEdges,
+          RenderMode.solidWithEdges => RenderMode.wireframe,
+        };
+        ref.read(renderModeProvider.notifier).state = nextMode;
+      },
     );
   }
 }

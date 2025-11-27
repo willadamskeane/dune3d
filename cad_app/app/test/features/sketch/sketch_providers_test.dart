@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vector_math/vector_math_64.dart';
 import 'package:cad_app/src/features/sketch/state/sketch_providers.dart';
 import 'package:cad_app/src/features/sketch/domain/sketch_constraints.dart';
+import 'package:cad_app/src/features/sketch/domain/sketch_entities.dart';
 
 void main() {
   group('SketchState', () {
@@ -211,18 +212,5 @@ void main() {
       expect(SketchToolMode.values, contains(SketchToolMode.dimension));
       expect(SketchToolMode.values, contains(SketchToolMode.constraint));
     });
-  });
-}
-
-// Helper class for testing
-class SketchPoint {
-  final String id;
-  final Vector2 position;
-  final bool isFixed;
-
-  SketchPoint({
-    required this.id,
-    required this.position,
-    this.isFixed = false,
   });
 }

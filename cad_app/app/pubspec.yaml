@@ -24,6 +24,10 @@ dependencies:
   # FFI support
   ffi: ^2.1.0
 
+  # File handling
+  path: ^1.9.0
+  path_provider: ^2.1.0
+
   # Our plugins
   cad_kernel_plugin:
     path: ../packages/cad_kernel_plugin

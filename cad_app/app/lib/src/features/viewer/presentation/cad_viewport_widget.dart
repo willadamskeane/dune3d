@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:vector_math/vector_math_64.dart' hide Colors;
 
 import '../state/scene_providers.dart';
 import '../state/camera_providers.dart';
+import '../domain/camera_model.dart';
+import '../domain/mesh_model.dart';
+import 'viewport_renderer.dart';
+
+/// Provider for the current render mode.
+final renderModeProvider = StateProvider<RenderMode>((ref) {
+  return RenderMode.solidWithEdges;
+});
+
+/// Provider for the hovered entity ID.
+final hoveredEntityIdProvider = StateProvider<String?>((ref) => null);
 
 /// Widget displaying the 3D CAD viewport.
-///
-/// Currently renders a placeholder. Will be replaced with flutter_gpu
-/// pipeline once integrated.
 class CadViewportWidget extends ConsumerStatefulWidget {
   const CadViewportWidget({super.key});
 
@@ -27,24 +36,29 @@ class _CadViewportWidgetState extends ConsumerState<CadViewportWidget> {
     final meshes = ref.watch(meshListProvider);
     final camera = ref.watch(cameraProvider);
     final selectedId = ref.watch(selectedEntityIdProvider);
+    final hoveredId = ref.watch(hoveredEntityIdProvider);
+    final renderMode = ref.watch(renderModeProvider);
 
     return LayoutBuilder(
       builder: (context, constraints) {
         return Listener(
           onPointerSignal: _handlePointerSignal,
+          onPointerHover: (event) => _handleHover(event, meshes, camera, constraints),
           child: GestureDetector(
             onScaleStart: _handleScaleStart,
             onScaleUpdate: _handleScaleUpdate,
             onScaleEnd: _handleScaleEnd,
-            onTapUp: _handleTap,
+            onTapUp: (details) => _handleTap(details, meshes, camera, constraints),
             child: Container(
-              color: Colors.black,
+              color: const Color(0xFF1A1A2E),
               child: CustomPaint(
                 size: Size(constraints.maxWidth, constraints.maxHeight),
                 painter: _ViewportPainter(
-                  meshCount: meshes.length,
-                  cameraPosition: camera.position.toString(),
+                  meshes: meshes,
+                  camera: camera,
                   selectedId: selectedId,
+                  hoveredId: hoveredId,
+                  renderMode: renderMode,
                 ),
               ),
             ),
@@ -94,128 +108,138 @@ class _CadViewportWidgetState extends ConsumerState<CadViewportWidget> {
     _lastPanPosition = null;
   }
 
-  void _handleTap(TapUpDetails details) {
-    // TODO: Implement ray casting for entity selection
-    // For now, just demonstrate selection capability
+  void _handleHover(
+    PointerHoverEvent event,
+    List<Mesh> meshes,
+    CameraModel camera,
+    BoxConstraints constraints,
+  ) {
+    // Simple hover detection using ray casting (placeholder)
+    // In a real implementation, this would cast a ray and find intersections
+    ref.read(hoveredEntityIdProvider.notifier).state = null;
+  }
+
+  void _handleTap(
+    TapUpDetails details,
+    List<Mesh> meshes,
+    CameraModel camera,
+    BoxConstraints constraints,
+  ) {
+    // Simple selection using ray casting (placeholder)
+    // In a real implementation, this would cast a ray and find the nearest intersection
+    final size = Size(constraints.maxWidth, constraints.maxHeight);
+    final tapPos = details.localPosition;
+
+    // For now, cycle through meshes for demo purposes
+    final currentSelected = ref.read(selectedEntityIdProvider);
+    if (meshes.isEmpty) {
+      ref.read(selectedEntityIdProvider.notifier).state = null;
+      return;
+    }
+
+    final currentIndex = meshes.indexWhere((m) => m.id == currentSelected);
+    final nextIndex = (currentIndex + 1) % meshes.length;
+    ref.read(selectedEntityIdProvider.notifier).state = meshes[nextIndex].id;
   }
 }
 
 class _ViewportPainter extends CustomPainter {
-  final int meshCount;
-  final String cameraPosition;
+  final List<Mesh> meshes;
+  final CameraModel camera;
   final String? selectedId;
+  final String? hoveredId;
+  final RenderMode renderMode;
 
   _ViewportPainter({
-    required this.meshCount,
-    required this.cameraPosition,
+    required this.meshes,
+    required this.camera,
     this.selectedId,
+    this.hoveredId,
+    required this.renderMode,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Draw grid placeholder
-    _drawGrid(canvas, size);
+    // Draw background gradient
+    _drawBackground(canvas, size);
+
+    // Draw ground grid
+    final aspect = size.width / size.height;
+    final vpMatrix = camera.projectionMatrix(aspect) * camera.viewMatrix;
+    ViewportRenderer.drawGroundGrid(canvas, size, vpMatrix);
+
+    // Render all meshes
+    ViewportRenderer.render(
+      canvas: canvas,
+      size: size,
+      meshes: meshes,
+      camera: camera,
+      mode: renderMode,
+      selectedId: selectedId,
+      hoveredId: hoveredId,
+    );
 
     // Draw info overlay
     _drawInfoOverlay(canvas, size);
   }
 
-  void _drawGrid(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.1)
-      ..strokeWidth = 1.0;
-
-    const gridSize = 50.0;
-    final centerX = size.width / 2;
-    final centerY = size.height / 2;
-
-    // Draw vertical lines
-    for (var x = centerX % gridSize; x < size.width; x += gridSize) {
-      canvas.drawLine(
-        Offset(x, 0),
-        Offset(x, size.height),
-        paint,
-      );
-    }
-
-    // Draw horizontal lines
-    for (var y = centerY % gridSize; y < size.height; y += gridSize) {
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(size.width, y),
-        paint,
-      );
-    }
-
-    // Draw axis indicators
-    final axisPaint = Paint()
-      ..strokeWidth = 2.0
-      ..strokeCap = StrokeCap.round;
-
-    // X axis (red)
-    axisPaint.color = Colors.red;
-    canvas.drawLine(
-      Offset(centerX, centerY),
-      Offset(centerX + 60, centerY),
-      axisPaint,
+  void _drawBackground(Canvas canvas, Size size) {
+    final gradient = LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        const Color(0xFF2D2D44),
+        const Color(0xFF1A1A2E),
+      ],
     );
 
-    // Y axis (green)
-    axisPaint.color = Colors.green;
-    canvas.drawLine(
-      Offset(centerX, centerY),
-      Offset(centerX, centerY - 60),
-      axisPaint,
-    );
-
-    // Z axis (blue) - simulated depth
-    axisPaint.color = Colors.blue;
-    canvas.drawLine(
-      Offset(centerX, centerY),
-      Offset(centerX - 40, centerY + 40),
-      axisPaint,
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+      Paint()..shader = gradient.createShader(Rect.fromLTWH(0, 0, size.width, size.height)),
     );
   }
 
   void _drawInfoOverlay(Canvas canvas, Size size) {
     final textStyle = TextStyle(
       color: Colors.white.withOpacity(0.8),
-      fontSize: 14,
+      fontSize: 12,
       fontFamily: 'monospace',
     );
 
-    final textPainter = TextPainter(
+    // Camera info
+    final cameraInfo = TextPainter(
       text: TextSpan(
-        text: '3D Viewport (flutter_gpu placeholder)\n'
-            'Meshes: $meshCount\n'
-            'Camera: $cameraPosition\n'
-            'Selected: ${selectedId ?? 'none'}',
+        text: 'Meshes: ${meshes.length}\n'
+            'Selected: ${selectedId ?? 'none'}\n'
+            'Mode: ${renderMode.name}',
         style: textStyle,
       ),
       textDirection: TextDirection.ltr,
     )..layout(maxWidth: size.width - 20);
 
-    textPainter.paint(canvas, const Offset(10, 10));
+    cameraInfo.paint(canvas, const Offset(10, 10));
 
-    // Draw instructions at bottom
-    final instructionPainter = TextPainter(
+    // Instructions at bottom
+    final instructions = TextPainter(
       text: TextSpan(
-        text: 'Drag: Orbit | Two-finger: Pan/Zoom | Scroll: Zoom',
-        style: textStyle.copyWith(fontSize: 12),
+        text: 'Drag: Orbit | Two-finger: Pan/Zoom | Scroll: Zoom | Tap: Select',
+        style: textStyle.copyWith(fontSize: 10),
       ),
       textDirection: TextDirection.ltr,
     )..layout(maxWidth: size.width);
 
-    instructionPainter.paint(
+    instructions.paint(
       canvas,
-      Offset(10, size.height - instructionPainter.height - 10),
+      Offset(10, size.height - instructions.height - 10),
     );
   }
 
   @override
   bool shouldRepaint(covariant _ViewportPainter oldDelegate) {
-    return oldDelegate.meshCount != meshCount ||
-        oldDelegate.cameraPosition != cameraPosition ||
-        oldDelegate.selectedId != selectedId;
+    return oldDelegate.meshes != meshes ||
+        oldDelegate.camera != camera ||
+        oldDelegate.selectedId != selectedId ||
+        oldDelegate.hoveredId != hoveredId ||
+        oldDelegate.renderMode != renderMode;
   }
 }

@@ -7,6 +7,8 @@ import 'package:vector_math/vector_math_64.dart' hide Colors;
 
 import '../state/sketch_providers.dart';
 import '../domain/sketch_constraints.dart';
+import '../../../core/commands/command_history.dart';
+import 'sketch_tool_handler.dart';
 
 /// Canvas widget for 2D sketch editing.
 class SketchCanvasWidget extends ConsumerStatefulWidget {
@@ -17,11 +19,13 @@ class SketchCanvasWidget extends ConsumerStatefulWidget {
 }
 
 class _SketchCanvasWidgetState extends ConsumerState<SketchCanvasWidget> {
-  final List<_StrokePoint> _currentStroke = [];
-  Offset? _lineStartPoint;
-  bool _isDrawingLine = false;
   Offset _panOffset = Offset.zero;
   double _scale = 1.0;
+  Offset? _lastFocalPoint;
+  Offset? _currentDragPosition;
+
+  SketchToolHandler? _currentHandler;
+  SketchToolMode? _lastToolMode;
 
   @override
   Widget build(BuildContext context) {
@@ -29,157 +33,159 @@ class _SketchCanvasWidgetState extends ConsumerState<SketchCanvasWidget> {
     final selectedId = ref.watch(sketchSelectedEntityProvider);
     final toolMode = ref.watch(sketchToolProvider);
 
+    // Update handler when tool mode changes
+    if (toolMode != _lastToolMode) {
+      _updateHandler(toolMode);
+      _lastToolMode = toolMode;
+    }
+
     return GestureDetector(
       onScaleStart: _handleScaleStart,
       onScaleUpdate: _handleScaleUpdate,
       onScaleEnd: _handleScaleEnd,
-      onTapUp: (details) => _handleTap(details, toolMode),
+      onTapUp: (details) => _handleTap(details),
       child: CustomPaint(
         painter: _SketchPainter(
           sketchState: sketchState,
-          currentStroke: _currentStroke,
-          lineStartPoint: _lineStartPoint,
+          lineStartPoint: null,
           selectedId: selectedId,
           panOffset: _panOffset,
           scale: _scale,
+          toolHandler: _currentHandler,
         ),
         child: Container(color: Colors.white),
       ),
     );
   }
 
-  void _handleScaleStart(ScaleStartDetails details) {
-    final toolMode = ref.read(sketchToolProvider);
+  void _updateHandler(SketchToolMode mode) {
+    _currentHandler?.onDeactivate();
 
-    if (toolMode == SketchToolMode.line && details.pointerCount == 1) {
-      setState(() {
-        _lineStartPoint = _toSketchCoords(details.focalPoint);
-        _isDrawingLine = true;
-      });
+    final sketchNotifier = ref.read(sketchStateProvider.notifier);
+    final commandHistory = ref.read(commandHistoryProvider.notifier);
+
+    switch (mode) {
+      case SketchToolMode.select:
+        _currentHandler = SelectToolHandler(
+          sketchNotifier: sketchNotifier,
+          onSelect: (id) {
+            ref.read(sketchSelectedEntityProvider.notifier).state = id;
+          },
+        );
+        break;
+      case SketchToolMode.line:
+        _currentHandler = LineToolHandler(
+          sketchNotifier: sketchNotifier,
+          commandHistory: commandHistory,
+        );
+        break;
+      case SketchToolMode.rectangle:
+        _currentHandler = RectangleToolHandler(
+          sketchNotifier: sketchNotifier,
+          commandHistory: commandHistory,
+        );
+        break;
+      case SketchToolMode.circle:
+        _currentHandler = CircleToolHandler(
+          sketchNotifier: sketchNotifier,
+          commandHistory: commandHistory,
+        );
+        break;
+      case SketchToolMode.arc:
+        _currentHandler = ArcToolHandler(
+          sketchNotifier: sketchNotifier,
+          commandHistory: commandHistory,
+        );
+        break;
+      case SketchToolMode.dimension:
+      case SketchToolMode.constraint:
+        _currentHandler = SelectToolHandler(
+          sketchNotifier: sketchNotifier,
+          onSelect: (id) {
+            ref.read(sketchSelectedEntityProvider.notifier).state = id;
+          },
+        );
+        break;
+    }
+
+    _currentHandler?.onActivate();
+  }
+
+  void _handleScaleStart(ScaleStartDetails details) {
+    _lastFocalPoint = details.focalPoint;
+
+    if (details.pointerCount == 1) {
+      final sketchCoords = _toSketchCoords(details.localFocalPoint);
+      _currentHandler?.onDragStart(sketchCoords);
+      _currentDragPosition = sketchCoords;
     }
   }
 
   void _handleScaleUpdate(ScaleUpdateDetails details) {
     final toolMode = ref.read(sketchToolProvider);
 
-    if (_isDrawingLine && details.pointerCount == 1) {
-      // Update line preview
-      setState(() {});
-    } else if (details.pointerCount == 2) {
+    if (details.pointerCount == 2) {
       // Two-finger pan/zoom
-      setState(() {
-        _panOffset += details.focalPointDelta;
-        _scale = (_scale * details.scale).clamp(0.1, 10.0);
-      });
-    } else if (toolMode == SketchToolMode.select && details.pointerCount == 1) {
-      // Single finger pan in select mode
-      setState(() {
-        _panOffset += details.focalPointDelta;
-      });
+      if (_lastFocalPoint != null) {
+        setState(() {
+          _panOffset += details.focalPoint - _lastFocalPoint!;
+          _scale = (_scale * details.scale).clamp(0.1, 10.0);
+          _lastFocalPoint = details.focalPoint;
+        });
+      }
+    } else if (details.pointerCount == 1) {
+      final sketchCoords = _toSketchCoords(details.localFocalPoint);
+
+      if (toolMode == SketchToolMode.select) {
+        // Single finger pan in select mode
+        if (_lastFocalPoint != null) {
+          setState(() {
+            _panOffset += details.focalPoint - _lastFocalPoint!;
+            _lastFocalPoint = details.focalPoint;
+          });
+        }
+      } else {
+        // Update tool handler with drag position
+        _currentHandler?.onDragUpdate(sketchCoords);
+        _currentDragPosition = sketchCoords;
+        setState(() {}); // Trigger repaint for preview
+      }
     }
   }
 
   void _handleScaleEnd(ScaleEndDetails details) {
-    if (_isDrawingLine && _lineStartPoint != null) {
-      // Finalize the line
-      final endPoint = _lineStartPoint!; // Would need to track this properly
-      _finalizeLine(_lineStartPoint!, endPoint);
-    }
-
-    setState(() {
-      _isDrawingLine = false;
-      _lineStartPoint = null;
-    });
+    _currentHandler?.onDragEnd();
+    _currentDragPosition = null;
+    _lastFocalPoint = null;
+    setState(() {}); // Trigger repaint
   }
 
-  void _handleTap(TapUpDetails details, SketchToolMode toolMode) {
+  void _handleTap(TapUpDetails details) {
     final sketchCoords = _toSketchCoords(details.localPosition);
-
-    switch (toolMode) {
-      case SketchToolMode.select:
-        _handleSelection(sketchCoords);
-        break;
-      case SketchToolMode.line:
-        _handleLinePoint(sketchCoords);
-        break;
-      case SketchToolMode.circle:
-        _handleCirclePoint(sketchCoords);
-        break;
-      default:
-        break;
-    }
+    _currentHandler?.onTap(sketchCoords);
+    setState(() {}); // Trigger repaint for preview updates
   }
 
   Offset _toSketchCoords(Offset screenPos) {
     return (screenPos - _panOffset) / _scale;
   }
-
-  void _handleSelection(Offset pos) {
-    final sketchState = ref.read(sketchStateProvider);
-
-    // Find nearest point within threshold
-    const threshold = 20.0;
-    String? nearestId;
-    double nearestDist = threshold;
-
-    for (final point in sketchState.points) {
-      final dist = (Offset(point.position.x, point.position.y) - pos).distance;
-      if (dist < nearestDist) {
-        nearestDist = dist;
-        nearestId = point.id;
-      }
-    }
-
-    ref.read(sketchSelectedEntityProvider.notifier).state = nearestId;
-  }
-
-  void _handleLinePoint(Offset pos) {
-    if (_lineStartPoint == null) {
-      setState(() {
-        _lineStartPoint = pos;
-      });
-    } else {
-      _finalizeLine(_lineStartPoint!, pos);
-      setState(() {
-        _lineStartPoint = null;
-      });
-    }
-  }
-
-  void _finalizeLine(Offset start, Offset end) {
-    final notifier = ref.read(sketchStateProvider.notifier);
-    final startPoint = notifier.addPoint(start.dx, start.dy);
-    final endPoint = notifier.addPoint(end.dx, end.dy);
-    notifier.addSegment(startPoint.id, endPoint.id);
-  }
-
-  void _handleCirclePoint(Offset pos) {
-    // TODO: Implement circle creation (two-click: center then radius)
-  }
-}
-
-class _StrokePoint {
-  final Offset position;
-  final double pressure;
-
-  _StrokePoint(this.position, this.pressure);
 }
 
 class _SketchPainter extends CustomPainter {
   final SketchState sketchState;
-  final List<_StrokePoint> currentStroke;
   final Offset? lineStartPoint;
   final String? selectedId;
   final Offset panOffset;
   final double scale;
+  final SketchToolHandler? toolHandler;
 
   _SketchPainter({
     required this.sketchState,
-    required this.currentStroke,
     this.lineStartPoint,
     this.selectedId,
     required this.panOffset,
     required this.scale,
+    this.toolHandler,
   });
 
   @override
@@ -190,9 +196,10 @@ class _SketchPainter extends CustomPainter {
 
     _drawGrid(canvas, size);
     _drawSketchEntities(canvas);
-    _drawCurrentStroke(canvas);
-    _drawLinePreview(canvas);
     _drawConstraintIndicators(canvas);
+
+    // Let tool handler draw its preview
+    toolHandler?.paint(canvas, size);
 
     canvas.restore();
 
@@ -301,6 +308,39 @@ class _SketchPainter extends CustomPainter {
       }
     }
 
+    // Draw arcs
+    for (final arc in sketchState.arcs) {
+      final center = sketchState.getPoint(arc.centerPointId);
+      final startPoint = sketchState.getPoint(arc.startPointId);
+      final endPoint = sketchState.getPoint(arc.endPointId);
+
+      if (center != null && startPoint != null && endPoint != null) {
+        final radius = (startPoint.position - center.position).length;
+        final startAngle = math.atan2(
+          startPoint.position.y - center.position.y,
+          startPoint.position.x - center.position.x,
+        );
+        final endAngle = math.atan2(
+          endPoint.position.y - center.position.y,
+          endPoint.position.x - center.position.x,
+        );
+
+        var sweep = endAngle - startAngle;
+        if (arc.clockwise && sweep > 0) sweep -= 2 * math.pi;
+        if (!arc.clockwise && sweep < 0) sweep += 2 * math.pi;
+
+        final paint = arc.id == selectedId ? selectedPaint : linePaint;
+        paint.style = PaintingStyle.stroke;
+
+        final rect = Rect.fromCircle(
+          center: Offset(center.position.x, center.position.y),
+          radius: radius,
+        );
+
+        canvas.drawArc(rect, startAngle, sweep, false, paint);
+      }
+    }
+
     // Draw points
     for (final point in sketchState.points) {
       final paint = point.isFixed ? constrainedPaint : pointPaint;
@@ -323,43 +363,6 @@ class _SketchPainter extends CustomPainter {
         );
       }
     }
-  }
-
-  void _drawCurrentStroke(Canvas canvas) {
-    if (currentStroke.length < 2) return;
-
-    final points = currentStroke
-        .map((sp) => Point(sp.position.dx, sp.position.dy, sp.pressure))
-        .toList();
-
-    final pathPoints = getStroke(points);
-    if (pathPoints.isEmpty) return;
-
-    final path = Path()..moveTo(pathPoints.first.x, pathPoints.first.y);
-
-    for (var i = 1; i < pathPoints.length; i++) {
-      path.lineTo(pathPoints[i].x, pathPoints[i].y);
-    }
-
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = Colors.grey.withOpacity(0.5)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.0,
-    );
-  }
-
-  void _drawLinePreview(Canvas canvas) {
-    if (lineStartPoint == null) return;
-
-    canvas.drawCircle(
-      lineStartPoint!,
-      5.0,
-      Paint()
-        ..color = Colors.blue
-        ..style = PaintingStyle.fill,
-    );
   }
 
   void _drawConstraintIndicators(Canvas canvas) {
@@ -398,6 +401,35 @@ class _SketchPainter extends CustomPainter {
             )..layout();
 
             textPainter.paint(canvas, mid + const Offset(5, -5));
+          }
+        }
+      } else if (constraint.type == SketchConstraintType.distance &&
+          constraint.value != null) {
+        // Draw distance dimension
+        if (constraint.entityIds.length >= 2) {
+          final p1 = sketchState.getPoint(constraint.entityIds[0]);
+          final p2 = sketchState.getPoint(constraint.entityIds[1]);
+
+          if (p1 != null && p2 != null) {
+            final mid = Offset(
+              (p1.position.x + p2.position.x) / 2,
+              (p1.position.y + p2.position.y) / 2,
+            );
+
+            final textPainter = TextPainter(
+              text: TextSpan(
+                text: constraint.value!.toStringAsFixed(1),
+                style: const TextStyle(
+                  color: Colors.purple,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  backgroundColor: Colors.white70,
+                ),
+              ),
+              textDirection: TextDirection.ltr,
+            )..layout();
+
+            textPainter.paint(canvas, mid + const Offset(5, -15));
           }
         }
       }
