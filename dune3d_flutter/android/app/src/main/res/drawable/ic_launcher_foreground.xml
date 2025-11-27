@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+  <group android:scaleX="0.4"
+      android:scaleY="0.4"
+      android:translateX="32.4"
+      android:translateY="32.4">
+    <!-- 3D cube icon representing Dune 3D -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,10 L10,35 L10,80 L54,105 L98,80 L98,35 Z"/>
+    <path
+        android:fillColor="#607D8B"
+        android:pathData="M54,10 L10,35 L54,60 L98,35 Z"/>
+    <path
+        android:fillColor="#455A64"
+        android:pathData="M54,60 L10,35 L10,80 L54,105 Z"/>
+    <path
+        android:fillColor="#37474F"
+        android:pathData="M54,60 L98,35 L98,80 L54,105 Z"/>
+  </group>
+</vector>
