@@ -26,7 +26,7 @@ class Dune3DTheme {
   static const Color sketchPreview = Color(0xFF4CAF50);
   static const Color sketchHover = Color(0xFF6BB3FF);
   static const Color constraint = Color(0xFFAB47BC);
-  static const Color dimension = Color(0xFF4A9EFF);
+  static const Color dimensionColor = Color(0xFF4A9EFF);
 
   // Grid Colors
   static const Color gridMinor = Color(0xFF2A2A30);
