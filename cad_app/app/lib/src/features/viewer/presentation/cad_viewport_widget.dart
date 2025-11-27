@@ -124,11 +124,9 @@ class _CadViewportWidgetState extends ConsumerState<CadViewportWidget> {
     CameraModel camera,
     BoxConstraints constraints,
   ) {
-    // Simple selection using ray casting (placeholder)
-    // In a real implementation, this would cast a ray and find the nearest intersection
-    final size = Size(constraints.maxWidth, constraints.maxHeight);
-    final tapPos = details.localPosition;
-
+    // TODO: Implement ray casting selection using:
+    // - Size(constraints.maxWidth, constraints.maxHeight)
+    // - details.localPosition
     // For now, cycle through meshes for demo purposes
     final currentSelected = ref.read(selectedEntityIdProvider);
     if (meshes.isEmpty) {

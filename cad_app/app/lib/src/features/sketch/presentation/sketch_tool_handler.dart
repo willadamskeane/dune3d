@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../state/sketch_providers.dart';
-import '../domain/sketch_entities.dart';
 import '../../../core/commands/command_history.dart';
 import '../../../core/commands/sketch_commands.dart';
 

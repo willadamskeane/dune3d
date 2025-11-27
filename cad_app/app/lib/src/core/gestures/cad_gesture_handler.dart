@@ -119,7 +119,6 @@ class CadGestureHandler {
   double? _lastPointerDistance;
   DateTime? _lastTapTime;
   Offset? _lastTapPosition;
-  Offset? _velocity;
 
   // Callbacks
   OnTapCallback? onTap;
@@ -351,7 +350,6 @@ class CadGestureHandler {
     _activePointers.clear();
     _lastFocalPoint = null;
     _lastPointerDistance = null;
-    _velocity = null;
   }
 }
 

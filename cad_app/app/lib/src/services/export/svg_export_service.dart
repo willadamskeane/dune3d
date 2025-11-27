@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:math' as math;
 
-import '../../features/sketch/domain/sketch_entities.dart';
 import '../../features/sketch/state/sketch_providers.dart';
 
 /// Service for exporting 2D sketches to SVG format.

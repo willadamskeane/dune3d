@@ -20,7 +20,6 @@ class _SketchCanvasWidgetState extends ConsumerState<SketchCanvasWidget> {
   Offset _panOffset = Offset.zero;
   double _scale = 1.0;
   Offset? _lastFocalPoint;
-  Offset? _currentDragPosition;
 
   SketchToolHandler? _currentHandler;
   SketchToolMode? _lastToolMode;
@@ -115,7 +114,6 @@ class _SketchCanvasWidgetState extends ConsumerState<SketchCanvasWidget> {
     if (details.pointerCount == 1) {
       final sketchCoords = _toSketchCoords(details.localFocalPoint);
       _currentHandler?.onDragStart(sketchCoords);
-      _currentDragPosition = sketchCoords;
     }
   }
 
@@ -145,7 +143,6 @@ class _SketchCanvasWidgetState extends ConsumerState<SketchCanvasWidget> {
       } else {
         // Update tool handler with drag position
         _currentHandler?.onDragUpdate(sketchCoords);
-        _currentDragPosition = sketchCoords;
         setState(() {}); // Trigger repaint for preview
       }
     }
@@ -153,7 +150,6 @@ class _SketchCanvasWidgetState extends ConsumerState<SketchCanvasWidget> {
 
   void _handleScaleEnd(ScaleEndDetails details) {
     _currentHandler?.onDragEnd();
-    _currentDragPosition = null;
     _lastFocalPoint = null;
     setState(() {}); // Trigger repaint
   }
