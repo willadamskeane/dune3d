@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import '../core/core.dart';
+import 'theme.dart';
 
 /// Main editor viewport for displaying and interacting with sketches
 class EditorViewport extends StatefulWidget {
@@ -192,7 +193,7 @@ class EditorViewportState extends State<EditorViewport> {
         onTapDown: _handleTapDown,
         onTapUp: _handleTapUp,
         child: Container(
-          color: const Color(0xFF1E1E1E),
+          color: Dune3DTheme.background,
           child: CustomPaint(
             painter: SketchPainter(
               document: widget.document,
@@ -260,7 +261,7 @@ class SketchPainter extends CustomPainter {
 
   void _drawGrid(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.grey.withOpacity(0.2)
+      ..color = Dune3DTheme.gridMinor
       ..strokeWidth = 1 / scale;
 
     // Calculate visible area in world coordinates
@@ -282,9 +283,7 @@ class SketchPainter extends CustomPainter {
     final startX = (minX / spacing).floor() * spacing;
     for (double x = startX; x <= maxX; x += spacing) {
       final isMajor = (x / (spacing * 5)).round() * spacing * 5 == x;
-      paint.color = isMajor
-          ? Colors.grey.withOpacity(0.4)
-          : Colors.grey.withOpacity(0.2);
+      paint.color = isMajor ? Dune3DTheme.gridMajor : Dune3DTheme.gridMinor;
       canvas.drawLine(Offset(x, minY), Offset(x, maxY), paint);
     }
 
@@ -292,9 +291,7 @@ class SketchPainter extends CustomPainter {
     final startY = (minY / spacing).floor() * spacing;
     for (double y = startY; y <= maxY; y += spacing) {
       final isMajor = (y / (spacing * 5)).round() * spacing * 5 == y;
-      paint.color = isMajor
-          ? Colors.grey.withOpacity(0.4)
-          : Colors.grey.withOpacity(0.2);
+      paint.color = isMajor ? Dune3DTheme.gridMajor : Dune3DTheme.gridMinor;
       canvas.drawLine(Offset(minX, y), Offset(maxX, y), paint);
     }
   }
@@ -305,31 +302,31 @@ class SketchPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     // X axis (red)
-    paint.color = Colors.red.withOpacity(0.7);
+    paint.color = Dune3DTheme.axisX;
     canvas.drawLine(const Offset(0, 0), Offset(50 / scale, 0), paint);
 
     // Y axis (green)
-    paint.color = Colors.green.withOpacity(0.7);
+    paint.color = Dune3DTheme.axisY;
     canvas.drawLine(const Offset(0, 0), Offset(0, 50 / scale), paint);
 
     // Origin point
-    paint.color = Colors.white;
+    paint.color = Dune3DTheme.origin;
     canvas.drawCircle(const Offset(0, 0), 4 / scale, paint);
   }
 
   void _drawEntities(Canvas canvas) {
     final normalPaint = Paint()
-      ..color = Colors.white
+      ..color = Dune3DTheme.sketch
       ..strokeWidth = 2 / scale
       ..style = PaintingStyle.stroke;
 
     final selectedPaint = Paint()
-      ..color = Colors.cyan
+      ..color = Dune3DTheme.sketchSelected
       ..strokeWidth = 3 / scale
       ..style = PaintingStyle.stroke;
 
     final constructionPaint = Paint()
-      ..color = Colors.orange.withOpacity(0.6)
+      ..color = Dune3DTheme.sketchConstruction
       ..strokeWidth = 1.5 / scale
       ..style = PaintingStyle.stroke;
 
@@ -354,11 +351,11 @@ class SketchPainter extends CustomPainter {
 
   void _drawControlPoints(Canvas canvas, SketchEntity entity) {
     final paint = Paint()
-      ..color = Colors.cyan
+      ..color = Dune3DTheme.sketchSelected
       ..style = PaintingStyle.fill;
 
     final outlinePaint = Paint()
-      ..color = Colors.white
+      ..color = Dune3DTheme.sketch
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1 / scale;
 
@@ -375,7 +372,7 @@ class SketchPainter extends CustomPainter {
     if (preview == null) return;
 
     final previewPaint = Paint()
-      ..color = Colors.yellow.withOpacity(0.8)
+      ..color = Dune3DTheme.sketchPreview
       ..strokeWidth = 2 / scale
       ..style = PaintingStyle.stroke;
 
@@ -383,7 +380,7 @@ class SketchPainter extends CustomPainter {
 
     // Draw preview points
     final pointPaint = Paint()
-      ..color = Colors.yellow
+      ..color = Dune3DTheme.sketchPreview
       ..style = PaintingStyle.fill;
 
     for (final point in tool!.previewPoints) {
@@ -396,11 +393,11 @@ class SketchPainter extends CustomPainter {
     if (box == null) return;
 
     final fillPaint = Paint()
-      ..color = Colors.blue.withOpacity(0.1)
+      ..color = Dune3DTheme.accent.withOpacity(0.1)
       ..style = PaintingStyle.fill;
 
     final strokePaint = Paint()
-      ..color = Colors.blue.withOpacity(0.5)
+      ..color = Dune3DTheme.accent.withOpacity(0.5)
       ..strokeWidth = 1 / scale
       ..style = PaintingStyle.stroke;
 
@@ -414,29 +411,16 @@ class SketchPainter extends CustomPainter {
     final textPainter = TextPainter(
       text: TextSpan(
         text: '${(scale * 100).toStringAsFixed(0)}%',
-        style: const TextStyle(
-          color: Colors.white54,
+        style: TextStyle(
+          color: Dune3DTheme.textTertiary,
           fontSize: 12,
+          fontWeight: FontWeight.w500,
         ),
       ),
       textDirection: TextDirection.ltr,
     );
     textPainter.layout();
-    textPainter.paint(canvas, Offset(size.width - textPainter.width - 10, 10));
-
-    // Draw entity count
-    final countPainter = TextPainter(
-      text: TextSpan(
-        text: 'Entities: ${document.entityCount}',
-        style: const TextStyle(
-          color: Colors.white54,
-          fontSize: 12,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    );
-    countPainter.layout();
-    countPainter.paint(canvas, Offset(10, size.height - countPainter.height - 10));
+    textPainter.paint(canvas, Offset(size.width - textPainter.width - 16, 16));
   }
 
   @override
