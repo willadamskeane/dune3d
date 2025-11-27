@@ -1,0 +1,39 @@
+name: cad_app
+description: High-performance CAD app for Android tablets.
+publish_to: "none"
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^2.6.0
+
+  # Navigation
+  go_router: ^14.2.0
+
+  # Math utils
+  vector_math: ^2.1.4
+
+  # Sketch strokes
+  perfect_freehand: ^2.0.0
+
+  # FFI support
+  ffi: ^2.1.0
+
+  # Our plugins
+  cad_kernel_plugin:
+    path: ../packages/cad_kernel_plugin
+  cad_input_plugin:
+    path: ../packages/cad_input_plugin
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
