@@ -220,3 +220,13 @@ final commandHistoryProvider =
     StateNotifierProvider<CommandHistoryNotifier, CommandHistoryState>((ref) {
   return CommandHistoryNotifier();
 });
+
+/// Provider for whether undo is available.
+final canUndoProvider = Provider<bool>((ref) {
+  return ref.watch(commandHistoryProvider).canUndo;
+});
+
+/// Provider for whether redo is available.
+final canRedoProvider = Provider<bool>((ref) {
+  return ref.watch(commandHistoryProvider).canRedo;
+});

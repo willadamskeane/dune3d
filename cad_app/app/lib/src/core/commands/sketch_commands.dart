@@ -1,5 +1,3 @@
-import 'package:vector_math/vector_math_64.dart';
-
 import 'command.dart';
 import '../../features/sketch/domain/sketch_entities.dart';
 import '../../features/sketch/domain/sketch_constraints.dart';
@@ -36,6 +34,12 @@ class AddPointCommand implements Command {
     }
   }
 
+  @override
+  bool canMergeWith(Command other) => false;
+
+  @override
+  Command mergeWith(Command other) => this;
+
   /// Get the point that was added.
   SketchPoint? get addedPoint => _addedPoint;
 }
@@ -69,6 +73,12 @@ class AddSegmentCommand implements Command {
     }
   }
 
+  @override
+  bool canMergeWith(Command other) => false;
+
+  @override
+  Command mergeWith(Command other) => this;
+
   SketchSegment? get addedSegment => _addedSegment;
 }
 
@@ -100,6 +110,12 @@ class AddCircleCommand implements Command {
       _notifier.deleteEntity(_addedCircle!.id);
     }
   }
+
+  @override
+  bool canMergeWith(Command other) => false;
+
+  @override
+  Command mergeWith(Command other) => this;
 
   SketchCircle? get addedCircle => _addedCircle;
 }
@@ -142,6 +158,12 @@ class AddConstraintCommand implements Command {
     }
   }
 
+  @override
+  bool canMergeWith(Command other) => false;
+
+  @override
+  Command mergeWith(Command other) => this;
+
   SketchConstraint? get addedConstraint => _addedConstraint;
 
   String _constraintTypeName(SketchConstraintType type) {
@@ -171,10 +193,6 @@ class DeleteEntityCommand implements Command {
 
   // Store deleted data for undo
   SketchPoint? _deletedPoint;
-  SketchSegment? _deletedSegment;
-  SketchCircle? _deletedCircle;
-  SketchArc? _deletedArc;
-  List<SketchConstraint> _deletedConstraints = [];
 
   DeleteEntityCommand(this._notifier, this.entityId);
 
@@ -201,6 +219,12 @@ class DeleteEntityCommand implements Command {
     // Note: Full restoration would require storing more state
     // This is a simplified implementation
   }
+
+  @override
+  bool canMergeWith(Command other) => false;
+
+  @override
+  Command mergeWith(Command other) => this;
 
   void _storeEntity() {
     // Implementation would store the entity data
@@ -304,6 +328,12 @@ class CreateLineCommand implements Command {
     }
   }
 
+  @override
+  bool canMergeWith(Command other) => false;
+
+  @override
+  Command mergeWith(Command other) => this;
+
   SketchSegment? get segment => _segment;
   SketchPoint? get startPoint => _startPoint;
   SketchPoint? get endPoint => _endPoint;
@@ -359,6 +389,12 @@ class CreateRectangleCommand implements Command {
     _segments.clear();
     _points.clear();
   }
+
+  @override
+  bool canMergeWith(Command other) => false;
+
+  @override
+  Command mergeWith(Command other) => this;
 
   List<SketchPoint> get points => List.unmodifiable(_points);
   List<SketchSegment> get segments => List.unmodifiable(_segments);

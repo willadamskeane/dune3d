@@ -68,6 +68,9 @@ class SketchStateNotifier extends StateNotifier<SketchState> {
 
   String _generateId(String prefix) => '${prefix}_${_idCounter++}';
 
+  /// Get the current sketch state (read-only access).
+  SketchState get currentState => state;
+
   /// Add a point to the sketch.
   SketchPoint addPoint(double x, double y, {bool isFixed = false}) {
     final point = SketchPoint(

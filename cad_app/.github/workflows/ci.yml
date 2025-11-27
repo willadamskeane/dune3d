@@ -1,0 +1,133 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies (app)
+        working-directory: app
+        run: flutter pub get
+
+      - name: Get dependencies (cad_kernel_plugin)
+        working-directory: packages/cad_kernel_plugin
+        run: flutter pub get
+
+      - name: Get dependencies (cad_input_plugin)
+        working-directory: packages/cad_input_plugin
+        run: flutter pub get
+
+      - name: Analyze code
+        working-directory: app
+        run: flutter analyze --no-fatal-infos
+
+      - name: Run tests
+        working-directory: app
+        run: flutter test --coverage
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: app/coverage/lcov.info
+          fail_ci_if_error: false
+
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies (app)
+        working-directory: app
+        run: flutter pub get
+
+      - name: Get dependencies (cad_kernel_plugin)
+        working-directory: packages/cad_kernel_plugin
+        run: flutter pub get
+
+      - name: Get dependencies (cad_input_plugin)
+        working-directory: packages/cad_input_plugin
+        run: flutter pub get
+
+      - name: Build APK (debug)
+        working-directory: app
+        run: flutter build apk --debug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 7
+
+  build-web:
+    name: Build Web
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies (app)
+        working-directory: app
+        run: flutter pub get
+
+      - name: Get dependencies (cad_kernel_plugin)
+        working-directory: packages/cad_kernel_plugin
+        run: flutter pub get
+
+      - name: Get dependencies (cad_input_plugin)
+        working-directory: packages/cad_input_plugin
+        run: flutter pub get
+
+      - name: Build web
+        working-directory: app
+        run: flutter build web --release
+
+      - name: Upload web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-release
+          path: app/build/web
+          retention-days: 7

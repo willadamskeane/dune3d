@@ -1,8 +1,6 @@
 import 'dart:io';
 import 'dart:math' as math;
 
-import 'package:vector_math/vector_math_64.dart';
-
 import '../../features/sketch/domain/sketch_entities.dart';
 import '../../features/sketch/state/sketch_providers.dart';
 

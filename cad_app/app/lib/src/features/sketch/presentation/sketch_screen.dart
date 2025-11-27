@@ -100,7 +100,7 @@ class SketchScreen extends ConsumerWidget {
                   SketchToolMode.circle,
             ),
             _ToolButton(
-              icon: Icons.arc_outlined,
+              icon: Icons.turn_right,
               label: 'Arc',
               isSelected: currentTool == SketchToolMode.arc,
               onPressed: () =>

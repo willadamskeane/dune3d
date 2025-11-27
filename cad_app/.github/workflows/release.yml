@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-release:
+    name: Build Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies (app)
+        working-directory: app
+        run: flutter pub get
+
+      - name: Get dependencies (cad_kernel_plugin)
+        working-directory: packages/cad_kernel_plugin
+        run: flutter pub get
+
+      - name: Get dependencies (cad_input_plugin)
+        working-directory: packages/cad_input_plugin
+        run: flutter pub get
+
+      - name: Run tests
+        working-directory: app
+        run: flutter test
+
+      - name: Build release APK
+        working-directory: app
+        run: flutter build apk --release
+
+      - name: Build release App Bundle
+        working-directory: app
+        run: flutter build appbundle --release
+
+      - name: Build web release
+        working-directory: app
+        run: flutter build web --release
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            app/build/app/outputs/flutter-apk/app-release.apk
+            app/build/app/outputs/bundle/release/app-release.aab
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload web build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-release-${{ github.ref_name }}
+          path: app/build/web
+          retention-days: 30

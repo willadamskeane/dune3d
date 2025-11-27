@@ -29,6 +29,12 @@ class AddPrimitiveCommand implements Command {
     _meshNotifier.removeMesh(mesh.id);
   }
 
+  @override
+  bool canMergeWith(Command other) => false;
+
+  @override
+  Command mergeWith(Command other) => this;
+
   String _meshTypeName() {
     if (mesh.id.contains('box')) return 'Box';
     if (mesh.id.contains('cylinder')) return 'Cylinder';
@@ -61,6 +67,12 @@ class RemoveMeshCommand implements Command {
       _meshNotifier.addMesh(_removedMesh!);
     }
   }
+
+  @override
+  bool canMergeWith(Command other) => false;
+
+  @override
+  Command mergeWith(Command other) => this;
 }
 
 /// Command for applying fillet to edges.
@@ -71,7 +83,6 @@ class ApplyFilletCommand implements Command {
   final double radius;
 
   Mesh? _originalMesh;
-  Mesh? _filletedMesh;
 
   ApplyFilletCommand(
     this._meshNotifier, {
@@ -96,6 +107,12 @@ class ApplyFilletCommand implements Command {
       _meshNotifier.updateMesh(_originalMesh!);
     }
   }
+
+  @override
+  bool canMergeWith(Command other) => false;
+
+  @override
+  Command mergeWith(Command other) => this;
 }
 
 /// Command for applying chamfer to edges.
@@ -129,6 +146,12 @@ class ApplyChamferCommand implements Command {
       _meshNotifier.updateMesh(_originalMesh!);
     }
   }
+
+  @override
+  bool canMergeWith(Command other) => false;
+
+  @override
+  Command mergeWith(Command other) => this;
 }
 
 /// Command for boolean union operation.
@@ -183,6 +206,12 @@ class BooleanUnionCommand implements Command {
       _meshNotifier.addMesh(_meshB!);
     }
   }
+
+  @override
+  bool canMergeWith(Command other) => false;
+
+  @override
+  Command mergeWith(Command other) => this;
 }
 
 /// Command for boolean cut operation (A - B).
@@ -236,6 +265,12 @@ class BooleanCutCommand implements Command {
       _meshNotifier.addMesh(_meshB!);
     }
   }
+
+  @override
+  bool canMergeWith(Command other) => false;
+
+  @override
+  Command mergeWith(Command other) => this;
 }
 
 /// Command for extruding a sketch profile.
@@ -273,4 +308,10 @@ class ExtrudeCommand implements Command {
       _meshNotifier.removeMesh(_extrudedMesh!.id);
     }
   }
+
+  @override
+  bool canMergeWith(Command other) => false;
+
+  @override
+  Command mergeWith(Command other) => this;
 }

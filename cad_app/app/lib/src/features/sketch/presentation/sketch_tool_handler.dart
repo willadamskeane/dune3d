@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:vector_math/vector_math_64.dart' hide Colors;
 
 import '../state/sketch_providers.dart';
 import '../domain/sketch_entities.dart';
@@ -489,11 +488,4 @@ class ArcToolHandler extends SketchToolHandler {
     _endPoint = null;
     _clickCount = 0;
   }
-}
-
-// Extension to access state for selection
-extension SketchStateNotifierAccess on SketchStateNotifier {
-  /// Get current state for read-only access during selection.
-  /// Uses Riverpod's built-in state property.
-  SketchState get currentState => state;
 }

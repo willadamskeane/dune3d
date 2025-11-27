@@ -2,8 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:perfect_freehand/perfect_freehand.dart';
-import 'package:vector_math/vector_math_64.dart' hide Colors;
 
 import '../state/sketch_providers.dart';
 import '../domain/sketch_constraints.dart';
