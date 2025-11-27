@@ -11,6 +11,9 @@ pluginManagement {
     includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
 
     repositories {
+        maven {
+            url = uri(File(System.getProperty("user.home"), ".android/manual-offline-m2"))
+        }
         google()
         mavenCentral()
         gradlePluginPortal()

@@ -46,7 +46,6 @@
 **/android/app/src/main/assets/
 
 # Web related
-**/lib/generated_plugin_registrant.dart
 
 # Exceptions to above rules.
 !**/android/app/src/main/assets/public/

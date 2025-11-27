@@ -28,6 +28,9 @@ class Vec2 {
 
   Vec2 get perpendicular => Vec2(-y, x);
 
+  /// Returns the angle of this vector in radians (from positive x-axis)
+  double get angle => math.atan2(y, x);
+
   double distanceTo(Vec2 other) => (this - other).length;
   double distanceSquaredTo(Vec2 other) => (this - other).lengthSquared;
 
